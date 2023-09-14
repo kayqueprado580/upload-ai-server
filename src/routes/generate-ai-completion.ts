@@ -1,56 +1,64 @@
 import { FastifyInstance } from "fastify";
-import { prisma } from "../lib/prisma";
 import { z } from 'zod'
-// import { createReadStream } from "fs";
+import { streamToResponse, OpenAIStream } from 'ai'
+import { prisma } from "../lib/prisma";
 import { openai } from "../lib/openai";
 
-export async function generateAICompletionRoute(app: FastifyInstance) {
-	app.post('/ai/complete', async (request, reply) => {
+export async function generateAiCompletionRoute(app: FastifyInstance) {
+  app.post('/ai/complete', async (req, reply) => {
+    const bodySchema = z.object({
+      videoId: z.string().uuid(),
+      prompt: z.string(),
+      temperature: z.number().min(0).max(1).default(0.5),
+    })
 
-		const bodySchema = z.object({
-			videoId: z.string().uuid(),
-			template: z.string(),
-			temperature: z.number().min(0).max(1).default(0.5),
-		})
+    const { videoId, prompt, temperature } = bodySchema.parse(req.body)
 
-		const { videoId, template, temperature } = bodySchema.parse(request.body)
+    const video = await prisma.video.findUniqueOrThrow({
+      where: {
+        id: videoId
+      }
+    })
 
-		const video = await prisma.video.findUniqueOrThrow({
-			where: {
-				id: videoId,
-			}
-		})
+    if (!video.transcription) {
+      return reply.status(400).send({ error: 'Video transcription was not generated yet.' })
+    }
 
-		const transcription = video.transcription
-		if (!transcription) {
-			return reply.status(400).send({ message: 'Video transcription was not generated yet.' })
-		}
-		const promptMessage = template.replace('{transcription}', transcription)
-		const completions = await generateComplete(promptMessage, temperature)
+    const promptMessage = prompt.replace('{transcription}', video.transcription)
 
-		return {
-			videoId,
-			message: promptMessage,
-			completions
-		}
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo-16k',
+      temperature,
+      messages: [
+        { role: 'user', content: promptMessage }
+      ],
+      stream: true,
+    })
 
-	})
+    const stream = OpenAIStream(response)
+
+    streamToResponse(stream, reply.raw, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      }
+    })
+  })
 }
 
+// async function generateComplete(content, temperature) {
 
-async function generateComplete(content, temperature) {
+// 	try {
+// 		return await openai.chat.completions.create({
+// 			model: 'gpt-3.5-turbo-16k',
+// 			temperature,
+// 			messages: [
+// 				{ role: 'user', content }
+// 			],
+// 		})
+// 	} catch (error) {
+// 		console.error(`error FUDEU: ${error}`);
+// 		return error
+// 	}
 
-	try {
-		return await openai.chat.completions.create({
-			model: 'gpt-3.5-turbo-16k',
-			temperature,
-			messages: [
-				{ role: 'user', content }
-			],
-		})
-	} catch (error) {
-		console.error(error);
-		return error
-	}
-
-}
+// }
