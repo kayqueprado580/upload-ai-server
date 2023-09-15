@@ -4,7 +4,10 @@ import { getAllPromptsRoute } from './routes/get-all-prompts'
 import { uploadVideoRoute } from './routes/upload-video'
 import { createTranscriptionRoute } from './routes/create-transcription'
 import { generateAiCompletionRoute } from './routes/generate-ai-completion'
+import 'dotenv/config'
 
+
+const door = process.env.PORT || 3333
 const app = fastify()
 
 app.register(fastifyCors,
