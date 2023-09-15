@@ -55,6 +55,73 @@ Transcrição:
 '''`.trim()
     }
   })
+
+  await prisma.prompt.create({
+    data: {
+      title: 'Legendas',
+      template: `Seu papel é gerar legendas para um vídeo do Youtube.
+  
+Abaixo você receberá uma transcrição desse vídeo, use essa transcrição para gerar legendas precisas.
+
+O retorno deve seguir o seguinte formato:
+'''
+-Lengadas
+
+'''
+
+Transcrição:
+'''
+{transcription}
+'''`.trim()
+    }
+  })
+
+  await prisma.prompt.create({
+    data: {
+      title: 'Resumo/Citações',
+      template: `Seu papel é gerar um resumo/citação
+  
+Abaixo você receberá uma transcrição desse vídeo, use essa transcrição para gerar resumo/citações precisa.
+O resumo deve possuir no máximo 80 palavras.
+Além disso, no final do resumo inclua uma lista de 3 até 10 informações resumidas/citações que ajudam a entender o video.
+'''
+
+O retorno deve seguir o seguinte formato:
+'''
+Resumo/Citações
+
+- Lista
+- Lista
+- Lista
+
+'''
+
+Transcrição:
+'''
+{transcription}
+'''`.trim()
+    }
+  })
+
+  await prisma.prompt.create({
+    data: {
+      title: 'Custom',
+      template: `Seu papel é gerar um(a) <escreva o que você precisa aqui>
+  
+Abaixo você receberá uma transcrição desse vídeo, use essa transcrição para gerar a <escreva o que você precisa aqui>.
+
+O retorno deve seguir o seguinte formato:
+'''
+<escreva o retorno que deve conter na resposta>
+
+'''
+
+Transcrição:
+'''
+{transcription}
+'''`.trim()
+    }
+  })
 }
 
 main()
